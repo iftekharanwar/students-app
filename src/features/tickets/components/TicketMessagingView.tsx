@@ -24,6 +24,7 @@ export const TicketMessagingView = ({
   const bottomBarHeight = useBottomTabBarHeight();
   const [message, setMessage] = useState<string>('');
   const [attachment, setAttachment] = useState<Attachment>();
+  const [isSending, setIsSending] = useState<boolean>(false);
 
   const {
     mutateAsync: reply,
@@ -32,13 +33,23 @@ export const TicketMessagingView = ({
   } = useReplyToTicket(ticketId);
 
   const onSend = () => {
+    if (isSending) {
+      // Prevent multiple sends if already in the process of sending a message
+      return;
+    }
+    setIsSending(true);
     reply({
       ticketId: ticketId,
       attachment: attachment as unknown as Blob,
       message: message.trim().replace(/\n/g, '<br>'),
-    }).catch(() => {
-      Alert.alert(t('common.error'), t('ticketScreen.sendError'));
-    });
+    })
+      .then(() => {
+        setIsSending(false);
+      })
+      .catch(() => {
+        setIsSending(false);
+        Alert.alert(t('common.error'), t('ticketScreen.sendError'));
+      });
   };
 
   useEffect(() => {
@@ -48,6 +59,11 @@ export const TicketMessagingView = ({
       Keyboard.dismiss();
     }
   }, [isSuccess]);
+
+  useEffect(() => {
+    // Reset isSending when the loading state changes
+    setIsSending(isLoading);
+  }, [isLoading]);
 
   return (
     <View
@@ -75,8 +91,8 @@ export const TicketMessagingView = ({
             onMessageChange={setMessage}
             attachment={attachment}
             onAttachmentChange={setAttachment}
-            loading={isLoading}
-            disabled={disabled}
+            loading={isLoading || isSending}
+            disabled={disabled || isSending}
             onLayout={onLayout}
             onSend={onSend}
             style={
