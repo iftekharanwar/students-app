@@ -277,19 +277,10 @@ const flattenFiles = (
 ): CourseFileOverviewWithLocation[] => {
   const result: CourseFileOverviewWithLocation[] = [];
   directoryContent?.forEach(item => {
-    if (item.type === 'file') {
-      result.push(item);
-    } else {
-      result.push(
-        ...flattenFiles(
-          (
-            item as Extract<
-              CourseDirectoryContentWithLocations,
-              { type: 'directory' }
-            >
-          ).files,
-        ),
-      );
+    if ('type' in item && item.type === 'file') {
+      result.push(item as CourseFileOverviewWithLocation);
+    } else if ('type' in item && item.type === 'directory') {
+      result.push(...flattenFiles(item.files));
     }
   });
   return result;
